@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BQ Pulse — BigQuery Release Tracker</title>
+    <meta name="description" content="A premium release tracker dashboard for Google Cloud BigQuery. View, filter, and search the latest BigQuery release notes and updates.">
+    <!-- Google Fonts: Inter for clean, modern sans-serif typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Reference vanilla CSS stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar section for stats, filters and controls -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3b82f6" />
+                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>BQ Pulse</h1>
+                    <span class="subtitle">BigQuery Releases</span>
+                </div>
+            </div>
+
+            <!-- Controller panel containing search & refresh -->
+            <div class="control-panel">
+                <div class="search-wrapper">
+                    <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search updates..." aria-label="Search release notes">
+                </div>
+
+                <button id="btn-refresh" class="btn-refresh" aria-label="Refresh release notes">
+                    <span class="btn-text">Refresh Feed</span>
+                    <svg class="spinner-icon" id="refresh-spinner" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l.73-.73" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Filter chips -->
+            <div class="filter-section">
+                <h3>Categories</h3>
+                <div class="filter-chips" id="filter-chips">
+                    <button class="chip active" data-category="all" id="chip-all">
+                        <span class="dot"></span> All Updates
+                    </button>
+                    <button class="chip" data-category="feature" id="chip-feature">
+                        <span class="dot emerald"></span> Features
+                    </button>
+                    <button class="chip" data-category="fix" id="chip-fix">
+                        <span class="dot sky"></span> Fixes
+                    </button>
+                    <button class="chip" data-category="changed" id="chip-changed">
+                        <span class="dot amber"></span> Changes
+                    </button>
+                    <button class="chip" data-category="deprecation" id="chip-deprecation">
+                        <span class="dot rose"></span> Deprecations
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics card -->
+            <div class="stats-card">
+                <h3>Dashboard Stats</h3>
+                <div class="stat-row">
+                    <span class="stat-label">Total Notes</span>
+                    <span class="stat-value" id="stat-total-notes">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Features</span>
+                    <span class="stat-value emerald-text" id="stat-features-count">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Fixes</span>
+                    <span class="stat-value sky-text" id="stat-fixes-count">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Changes</span>
+                    <span class="stat-value amber-text" id="stat-changes-count">—</span>
+                </div>
+                <div class="divider"></div>
+                <div class="cache-info">
+                    <span id="cache-time-label">Last fetched:</span>
+                    <span id="cache-time-value" class="cache-time">—</span>
+                </div>
+            </div>
+
+            <footer class="sidebar-footer">
+                <p>Data direct from Google Cloud Feeds</p>
+            </footer>
+        </aside>
+
+        <!-- Main timeline viewer -->
+        <main class="main-content">
+            <header class="mobile-header">
+                <div class="mobile-brand">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3b82f6" />
+                        <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <h2>BQ Pulse</h2>
+                </div>
+                <button id="btn-refresh-mobile" class="btn-refresh-icon" aria-label="Refresh">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l.73-.73" />
+                    </svg>
+                </button>
+            </header>
+
+            <div class="timeline-header">
+                <h2>Release Timeline</h2>
+                <p class="timeline-subtitle">Explore historical changes, security advisories, and feature updates in BigQuery.</p>
+            </div>
+
+            <!-- Loader / Timeline wrapper -->
+            <div id="timeline-wrapper">
+                <!-- Skeleton loader shown while fetching data -->
+                <div class="skeleton-loader" id="skeleton-loader">
+                    <div class="skeleton-card">
+                        <div class="skeleton-line title"></div>
+                        <div class="skeleton-line text long"></div>
+                        <div class="skeleton-line text short"></div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-line title"></div>
+                        <div class="skeleton-line text long"></div>
+                        <div class="skeleton-line text short"></div>
+                    </div>
+                    <div class="skeleton-card">
+                        <div class="skeleton-line title"></div>
+                        <div class="skeleton-line text long"></div>
+                        <div class="skeleton-line text short"></div>
+                    </div>
+                </div>
+
+                <!-- Actual timeline container -->
+                <div class="timeline-container" id="timeline-container"></div>
+
+                <!-- Empty state visual -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3>No release notes found</h3>
+                    <p>Try adjusting your search query or switching categories.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast system -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Reference vanilla JS app -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
