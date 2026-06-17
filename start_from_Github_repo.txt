@@ -1,0 +1,45 @@
+HOW TO START BQ PULSE FROM A GITHUB REPOSITORY
+=============================================
+
+Step 1: Clone the GitHub Repository
+----------------------------------
+Open your terminal (PowerShell, CMD, or Bash) and run:
+git clone <github-repository-url>
+
+(Replace <github-repository-url> with your repository's URL, e.g. https://github.com/username/bq-releases-notes.git)
+
+Step 2: Navigate into the Project Folder
+----------------------------------------
+cd bq-releases-notes
+
+Step 3: Set Up a Python Virtual Environment
+------------------------------------------
+# Windows:
+python -m venv venv
+
+# macOS / Linux:
+python3 -m venv venv
+
+Step 4: Activate the Virtual Environment
+----------------------------------------
+# Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt / cmd.exe):
+.\venv\Scripts\activate.bat
+
+# macOS / Linux (Bash / Zsh):
+source venv/bin/activate
+
+Step 5: Install Dependencies
+----------------------------
+pip install Flask
+
+Step 6: Start the Server
+-----------------------
+python app.py
+
+Step 7: Open the Dashboard
+--------------------------
+Open your web browser and navigate to:
+http://127.0.0.1:5000
