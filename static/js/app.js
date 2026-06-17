@@ -66,6 +66,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
+        // Reset Search & Filters inside Empty State
+        const btnResetFilters = document.getElementById('btn-reset-filters');
+        if (btnResetFilters) {
+            btnResetFilters.addEventListener('click', () => {
+                searchInput.value = '';
+                searchQuery = '';
+                
+                // Reset category active state
+                filterChips.forEach(chip => {
+                    if (chip.getAttribute('data-category') === 'all') {
+                        chip.classList.add('active');
+                    } else {
+                        chip.classList.remove('active');
+                    }
+                });
+                currentFilter = 'all';
+                
+                // Re-render
+                renderTimeline();
+                showToast('Cleared search query and active filters', 'success');
+            });
+        }
         
         // Live search filter (debounced)
         let searchTimeout;

@@ -689,6 +689,36 @@ body {
     color: var(--text-primary);
 }
 
+.btn-reset-filters {
+    margin-top: 1.5rem;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: var(--border-radius-md);
+    padding: 0.65rem 1.25rem;
+    color: var(--accent-blue);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition-normal);
+}
+
+.btn-reset-filters:hover {
+    background: rgba(59, 130, 246, 0.18);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-1px);
+}
+
+.btn-reset-filters:active {
+    transform: translateY(0);
+}
+
+body.light-theme .btn-reset-filters {
+    background: rgba(59, 130, 246, 0.05);
+    color: var(--accent-blue);
+}
+
 /* Notification Toast */
 .toast-container {
     position: fixed;
