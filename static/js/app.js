@@ -3,8 +3,15 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme Initial State Check
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    if (currentTheme === 'light') {
+        document.body.classList.add('light-theme');
+    }
+
     // State Variables
     let allReleaseNotes = [];
+    let filteredNotes = [];
     let currentFilter = 'all';
     let searchQuery = '';
     let isRefreshing = false;
@@ -37,6 +44,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Event Listeners
         btnRefresh.addEventListener('click', () => refreshFeed());
         btnRefreshMobile.addEventListener('click', () => refreshFeed());
+        
+        const btnExportCsv = document.getElementById('btn-export-csv');
+        if (btnExportCsv) {
+            btnExportCsv.addEventListener('click', () => downloadCSV(filteredNotes));
+        }
+
+        // Theme Toggle Switch
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.checked = currentTheme === 'light';
+            themeToggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    document.body.classList.add('light-theme');
+                    localStorage.setItem('theme', 'light');
+                    showToast('Swapped to Light Theme', 'success');
+                } else {
+                    document.body.classList.remove('light-theme');
+                    localStorage.setItem('theme', 'dark');
+                    showToast('Swapped to Dark Theme', 'success');
+                }
+            });
+        }
         
         // Live search filter (debounced)
         let searchTimeout;
@@ -181,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         timelineContainer.innerHTML = '';
         
         // Filter Notes
-        const filteredNotes = allReleaseNotes.filter(note => {
+        filteredNotes = allReleaseNotes.filter(note => {
             const contentLower = note.content.toLowerCase();
             const titleLower = note.title.toLowerCase();
             
@@ -202,6 +231,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return matchesSearch && matchesCategory;
         });
+
+        const btnExportCsv = document.getElementById('btn-export-csv');
+        if (btnExportCsv) {
+            btnExportCsv.disabled = filteredNotes.length === 0;
+        }
 
         if (filteredNotes.length === 0) {
             timelineContainer.style.display = 'none';
@@ -224,6 +258,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="card-header">
                     <h3 class="update-date">${note.title}</h3>
                     <div class="card-actions">
+                        <button class="btn-card-action btn-copy-content" title="Copy release content to clipboard">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
                         <button class="btn-card-action btn-copy-link" data-link="${note.link}" title="Copy link to this release">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -242,6 +282,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
+            // Add copy content button listener
+            const copyContentBtn = card.querySelector('.btn-copy-content');
+            copyContentBtn.addEventListener('click', (e) => {
+                const btn = e.currentTarget;
+                if (btn.classList.contains('copied')) return;
+                
+                const title = note.title;
+                const plainText = cleanHtmlToText(note.content);
+                const textToCopy = `${title}\n\n${plainText}`;
+                
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('Release content copied to clipboard!', 'success');
+                    
+                    // Micro-animation: change icon to checkmark
+                    const originalSVG = btn.innerHTML;
+                    btn.innerHTML = `
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    `;
+                    btn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalSVG;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy content: ', err);
+                    showToast('Failed to copy content', 'error');
+                });
+            });
+
             // Add copy button listener
             const copyBtn = card.querySelector('.btn-copy-link');
             copyBtn.addEventListener('click', (e) => {
@@ -320,12 +392,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         toastContainer.appendChild(toast);
         
-        // Auto-remove toast after 4 seconds
+        // Auto-remove toast after 4 seconds (3.5s display + 0.3s fade-out + 50ms buffer)
         setTimeout(() => {
             toast.classList.add('removing');
-            toast.addEventListener('transitionend', () => {
+            setTimeout(() => {
                 toast.remove();
-            });
+            }, 350);
         }, 3500);
     }
 
@@ -420,4 +492,119 @@ document.addEventListener('DOMContentLoaded', () => {
             hideSelectionBubble();
         }
     });
+
+    /**
+     * Converts clean text from release notes HTML content for clipboard / CSV usage.
+     */
+    function cleanHtmlToText(htmlContent) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // 1. Format headings: replace text with [HEADING] and add a br after it
+        const headings = tempDiv.querySelectorAll('h3');
+        headings.forEach(h3 => {
+            const headingText = h3.textContent.trim().toUpperCase();
+            h3.textContent = `[${headingText}]`;
+            
+            const br = document.createElement('br');
+            h3.parentNode.insertBefore(br, h3.nextSibling);
+        });
+
+        // 2. Format list items: prepend bullet point
+        const listItems = tempDiv.querySelectorAll('li');
+        listItems.forEach(li => {
+            li.textContent = `• ${li.textContent.trim()}`;
+        });
+
+        // 3. Add spacing between paragraphs by inserting <br> after each <p>
+        const paragraphs = tempDiv.querySelectorAll('p');
+        paragraphs.forEach(p => {
+            const br = document.createElement('br');
+            p.parentNode.insertBefore(br, p.nextSibling);
+        });
+
+        return tempDiv.innerText.replace(/\n{3,}/g, '\n\n').trim();
+    }
+
+    /**
+     * Converts a list of release notes to a CSV string and triggers browser download.
+     */
+    function downloadCSV(notes) {
+        if (!notes || notes.length === 0) {
+            showToast('No release notes to export', 'error');
+            return;
+        }
+
+        const headers = ['Date', 'Title', 'Categories', 'Link', 'Description'];
+        
+        const escapeCSVValue = (val) => {
+            if (val === null || val === undefined) return '';
+            let formatted = String(val).trim();
+            formatted = formatted.replace(/"/g, '""');
+            if (formatted.includes(',') || formatted.includes('\n') || formatted.includes('\r') || formatted.includes('"')) {
+                return `"${formatted}"`;
+            }
+            return formatted;
+        };
+
+        const rows = notes.map(note => {
+            const contentLower = note.content.toLowerCase();
+            const categories = [];
+            if (contentLower.includes('<h3>feature</h3>')) categories.push('Feature');
+            if (contentLower.includes('<h3>fix</h3>')) categories.push('Fix');
+            if (contentLower.includes('<h3>changed</h3>') || contentLower.includes('<h3>change</h3>')) categories.push('Change');
+            if (contentLower.includes('<h3>deprecation</h3>')) categories.push('Deprecation');
+            if (contentLower.includes('<h3>security</h3>')) categories.push('Security');
+            
+            const categoryStr = categories.join(', ') || 'General';
+            const description = cleanHtmlToText(note.content);
+
+            let dateStr = note.updated;
+            try {
+                if (dateStr) {
+                    const date = new Date(dateStr);
+                    dateStr = date.toISOString().split('T')[0];
+                }
+            } catch (e) {
+                // Keep raw updated string if parsing fails
+            }
+
+            return [
+                dateStr,
+                note.title,
+                categoryStr,
+                note.link,
+                description
+            ];
+        });
+
+        const csvContent = [
+            headers.map(escapeCSVValue).join(','),
+            ...rows.map(row => row.map(escapeCSVValue).join(','))
+        ].join('\n');
+
+        try {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            const today = new Date().toISOString().split('T')[0];
+            let filename = `bigquery_releases_${today}.csv`;
+            if (currentFilter !== 'all') {
+                filename = `bigquery_releases_${currentFilter}_${today}.csv`;
+            }
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`Exported ${notes.length} notes to CSV!`, 'success');
+        } catch (error) {
+            console.error('CSV export failed:', error);
+            showToast('Failed to export CSV', 'error');
+        }
+    }
 });
